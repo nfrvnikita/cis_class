@@ -79,9 +79,7 @@ def load_model(
         model_dir, local_files_only=True
     )
     config.num_labels = 10
-    model = DistilBertForSequenceClassification.from_pretrained(
-        model_dir, config=config, local_files_only=True
-    )
+    model = DistilBertForSequenceClassification(config)
 
     state_dict_path = os.path.join(model_dir, "pytorch_model.pt")
     if os.path.exists(state_dict_path):

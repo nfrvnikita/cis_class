@@ -177,8 +177,8 @@ if st.button("Предсказать тематику"):
             probs = predict(input_text, model, tokenizer)
 
         class_mapping = {
-            "2": "Computer Science",
-            "LABEL_9": "Statistics",
+            2: "Computer Science",
+            9: "Statistics",
             5: "Mathematics",
             8: "Quantitative Biology",
             7: "Physics",

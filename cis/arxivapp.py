@@ -60,7 +60,7 @@ st.sidebar.markdown("- *Аннотация (abstract)* (необязательн
 
 @st.cache_resource(show_spinner=False)
 def load_model(
-    model_dir: str = "/home/anufriev/Projects/cis/models/",
+    model_dir: str = "../models/",
 ) -> Tuple[DistilBertForSequenceClassification, DistilBertTokenizerFast]:
     """
     Загружает токенизатор, конфигурацию модели и веса, сохранённые через torch.load.

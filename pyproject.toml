@@ -1,38 +1,32 @@
-[build-system]
-requires = ["flit_core >=3.2,<4"]
-build-backend = "flit_core.buildapi"
-
 [project]
 name = "cis"
-version = "0.0.1"
-description = "Service about classification cis."
-authors = [
-  { name = "Anufriev N" },
-]
-license = { file = "LICENSE" }
+version = "0.1.0"
+description = "Add your description here"
 readme = "README.md"
-classifiers = [
-    "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License"
-]
+requires-python = ">=3.11"
 dependencies = [
-    "mkdocs",
-    "pip",
-    "python-dotenv",
-    "ruff",
+    "accelerate>=1.6.0",
+    "datasets>=3.5.0",
+    "ipykernel>=6.29.5",
+    "matplotlib>=3.10.1",
+    "numpy>=2.1.1",
+    "opencv-python>=4.11.0.86",
+    "optuna>=4.2.1",
+    "pandas>=2.2.3",
+    "pillow>=11.1.0",
+    "pycocotools>=2.0.8",
+    "scikit-learn>=1.6.1",
+    "seaborn>=0.13.2",
+    "streamlit>=1.44.1",
+    "tiktoken>=0.9.0",
+    "timm>=1.0.15",
+    "torch>=2.6.0",
+    "torchvision>=0.21.0",
+    "transformers==4.50.3",
+    "ultralytics>=8.3.103",
 ]
-requires-python = "~=3.11.0"
 
-
-[tool.ruff]
-line-length = 99
-src = ["cis"]
-include = ["pyproject.toml", "cis/**/*.py"]
-
-[tool.ruff.lint]
-extend-select = ["I"]  # Add import sorting
-
-[tool.ruff.lint.isort]
-known-first-party = ["cis"]
-force-sort-within-sections = true
-
+[dependency-groups]
+dev = [
+    "ruff>=0.11.4",
+]

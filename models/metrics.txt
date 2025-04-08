@@ -1,0 +1,4 @@
+Training metrics:
+{'train_runtime': 1060.8474, 'train_samples_per_second': 104.351, 'train_steps_per_second': 3.263, 'total_flos': 1.14808516354836e+16, 'train_loss': 0.42371497134952996, 'epoch': 3.0}
+Evaluation metrics:
+{'eval_loss': 0.40866729617118835, 'eval_accuracy': 0.8592682926829268, 'eval_f1_macro': 0.23199151791950032, 'eval_runtime': 11.8635, 'eval_samples_per_second': 345.596, 'eval_steps_per_second': 10.874, 'epoch': 3.0}

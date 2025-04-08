@@ -1,61 +1,92 @@
 # CIS
 
-<a target="_blank" href="https://cookiecutter-data-science.drivendata.org/">
-    <img src="https://img.shields.io/badge/CCDS-Project%20template-328F97?logo=cookiecutter" />
-</a>
+CIS — это сервис машинного обучения, предназначенный для классификации статей arXiv по тематическим категориям на основе их названия и аннотации (abstract). Проект использует дообученную модель DistilBERT, которая предсказывает наиболее вероятные темы статьи. Веб-интерфейс построен с помощью Streamlit и предоставляет удобный способ ввода данных и получения результатов в режиме реального времени.
 
-Service about classification cis.
+Сервис включает два основных компонента:
+- **Тренировочный пайплайн:** Дообучение модели DistilBERT на датасете arXiv.
+- **Веб-приложение:** Интерактивный интерфейс на Streamlit для классификации новых статей.
 
-## Project Organization
+## Структура проекта
 
 ```
-├── LICENSE            <- Open-source license if one is chosen
-├── Makefile           <- Makefile with convenience commands like `make data` or `make train`
-├── README.md          <- The top-level README for developers using this project.
+├── LICENSE                  <- Лицензия с открытым исходным кодом
+├── README.md                <- Документация по запуску проекта
 ├── data
-│   ├── external       <- Data from third party sources.
-│   ├── interim        <- Intermediate data that has been transformed.
-│   ├── processed      <- The final, canonical data sets for modeling.
-│   └── raw            <- The original, immutable data dump.
-│
-├── docs               <- A default mkdocs project; see www.mkdocs.org for details
-│
-├── models             <- Trained and serialized models, model predictions, or model summaries
-│
-├── notebooks          <- Jupyter notebooks. Naming convention is a number (for ordering),
-│                         the creator's initials, and a short `-` delimited description, e.g.
-│                         `1.0-jqp-initial-data-exploration`.
-│
-├── pyproject.toml     <- Project configuration file with package metadata for 
-│                         cis and configuration for tools like black
-│
-├── references         <- Data dictionaries, manuals, and all other explanatory materials.
-│
-├── reports            <- Generated analysis as HTML, PDF, LaTeX, etc.
-│   └── figures        <- Generated graphics and figures to be used in reporting
-│
-├── requirements.txt   <- The requirements file for reproducing the analysis environment, e.g.
-│                         generated with `pip freeze > requirements.txt`
-│
-├── setup.cfg          <- Configuration file for flake8
-│
-└── cis   <- Source code for use in this project.
-    │
-    ├── __init__.py             <- Makes cis a Python module
-    │
-    ├── config.py               <- Store useful variables and configuration
-    │
-    ├── dataset.py              <- Scripts to download or generate data
-    │
-    ├── features.py             <- Code to create features for modeling
-    │
-    ├── modeling                
-    │   ├── __init__.py 
-    │   ├── predict.py          <- Code to run model inference with trained models          
-    │   └── train.py            <- Code to train models
-    │
-    └── plots.py                <- Code to create visualizations
+│   └── arxivData.json       <- Данные со статьями arXiv
+├── models                   <- Сохраненные веса модели, чекпоинты и т.п.
+├── notebooks                <- Jupyter-ноутбуки для тестирования кода и экспериментов
+├── pyproject.toml           <- Файл конфигурации проекта (зависимости, метаданные и т.д.)
+└── cis                      <- Исходный код проекта
+    ├── __init__.py          <- Инициализация пакета
+    ├── arxivapp.py          <- Код веб-приложения на Streamlit
+    └── train_bert.py        <- Скрипт для дообучения модели DistilBERT на данных arXiv
 ```
 
 --------
 
+Зависимости и конфигурация проекта управляются через pyproject.toml. Для настройки окружения выполните следующие шаги:
+
+1. Клонирование репозитория:
+```bash
+git clone https://github.com/nfrvnikita/cis_class.git
+cd cis_class
+```
+
+2. Создание виртуального окружения:
+
+Рекомендуется использовать виртуальное окружение. Например, с помощью venv:
+```bash
+python -m venv venv
+source venv/bin/activate
+```
+
+3. Установка зависимостей:
+
+Если вы используете Poetry или другой менеджер зависимостей, зависимости будут установлены из файла pyproject.toml:
+```bash
+poetry install
+```
+Или, если у вас есть сгенерированный файл requirements.txt:
+```bash
+pip install -r requirements.txt
+```
+При помощи uv:
+```bash
+uv sync
+```
+
+## Обучение модели
+
+Для дообучения модели DistilBERT на датасете arXiv запустите скрипт:
+
+```bash
+python cis/train_bert.py --data_path ./data/arxivData.json --output_dir ./models --num_train_epochs 3 --batch_size 32 --learning_rate 1e-5 --weight_decay 0.01 --seed 42 --rare_threshold 50
+```
+Параметры:
+
+--data_path: Путь к JSON-файлу с данными arXiv.
+
+--output_dir: Директория для сохранения обученной модели, токенизатора и весов.
+
+--num_train_epochs: Количество эпох обучения.
+
+--batch_size: Размер батча.
+
+--learning_rate: Скорость обучения.
+
+--weight_decay: Коэффициент регуляризации.
+
+--seed: Seed для воспроизводимости.
+
+--rare_threshold: Порог для объединения редких классов в категорию "Other".
+
+После обучения модель и токенизатор сохраняются в директории ./models.
+
+## Запуск веб-приложения Streamlit
+
+Веб-приложение предоставляет интуитивно понятный интерфейс для классификации статей. Чтобы запустить его, выполните:
+```bash
+streamlit run cis/arxivapp.py
+```
+
+После запуска приложение откроется в браузере. Введите название статьи и, при необходимости, её аннотацию. Результатом работы приложения станет вывод топ-классов (суммарная вероятность которых превышает 95%) и полный список вероятностей по классам.

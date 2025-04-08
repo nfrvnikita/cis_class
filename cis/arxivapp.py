@@ -71,6 +71,7 @@ def load_model(
       - файл с весами, сохранёнными через torch.save(model.state_dict(), "pytorch_model.pt")
     """
     model_dir = os.path.abspath(model_dir)
+    print(model_dir)
     tokenizer = DistilBertTokenizerFast.from_pretrained(
         model_dir, local_files_only=True
     )

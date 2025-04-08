@@ -2,6 +2,7 @@ import os
 import logging
 import argparse
 import ast
+import re
 from typing import Tuple, Dict, Any
 
 import numpy as np
@@ -18,6 +19,13 @@ from transformers import (
     DataCollatorWithPadding,
 )
 from datasets import Dataset
+
+import nltk
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
+
+nltk.download("stopwords")
+nltk.download("wordnet")
 
 torch.cuda.empty_cache()
 
@@ -67,12 +75,35 @@ def map_tag(tag: str) -> str:
         return tag
 
 
+def clean_text(text: str) -> str:
+    """
+    Осуществляет предварительную обработку текста:
+    - Приведение к нижнему регистру
+    - Удаление пунктуации
+    - Удаление лишних пробелов
+    - Токенизация (split на слова)
+    - Удаление стоп-слов (английские)
+    - Лемматизация
+    Возвращает очищенный текст.
+    """
+    text = text.lower()
+    text = re.sub(r"[^\w\s]", "", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    tokens = text.split()
+    stop_words = set(stopwords.words("english"))
+    tokens = [word for word in tokens if word not in stop_words]
+    lemmatizer = WordNetLemmatizer()
+    tokens = [lemmatizer.lemmatize(word) for word in tokens]
+    return " ".join(tokens)
+
+
 def load_and_preprocess_data(
     json_file: str, rare_threshold: int = 50
 ) -> Tuple[pd.DataFrame, Dict[str, int], Dict[int, str]]:
     """
     Загружает данные из JSON-файла, выполняет парсинг тегов, группирует схожие классы
-    и объединяет редкие классы в категорию "Other".
+    и объединяет редкие классы в категорию "Other". Также выполняется предварительная
+    обработка текста: чистка, приведение к нижнему регистру, удаление стоп-слов и лемматизация.
     """
     df: pd.DataFrame = pd.read_json(json_file)
     logger.info(f"Загружено {len(df)} примеров")
@@ -92,7 +123,10 @@ def load_and_preprocess_data(
     df["parsed_tag"] = df["tag"].apply(parse_first_tag)
     df = df.dropna(subset=["parsed_tag"]).reset_index(drop=True)
     df["mapped_tag"] = df["parsed_tag"].apply(map_tag)
+
+    # Формируем объединённый текст и применяем очистку
     df["text"] = df["title"] + " [SEP] " + df["summary"]
+    df["text"] = df["text"].apply(clean_text)
 
     tag_counts = df["mapped_tag"].value_counts()
     logger.info("Распределение классов после группировки:")
@@ -121,7 +155,8 @@ def tokenize_function(
     example: Dict[str, Any], tokenizer: DistilBertTokenizerFast
 ) -> Dict[str, Any]:
     """
-    Токенизирует входной текст с ограничением в 512 токенов.
+    Токенизация входного текста с ограничением в 512 токенов.
+    Здесь уже используется токенизатор DistilBertTokenizerFast из библиотеки Transformers.
     """
     return tokenizer(example["text"], truncation=True, max_length=512)
 
@@ -247,17 +282,17 @@ if __name__ == "__main__":
     parser.add_argument(
         "--output_dir",
         type=str,
-        default="./models",
+        default="./models/distilbert-base-cased",
         help="Директория для сохранения модели и логов",
     )
     parser.add_argument(
-        "--num_train_epochs", type=int, default=3, help="Количество эпох обучения"
+        "--num_train_epochs", type=int, default=5, help="Количество эпох обучения"
     )
     parser.add_argument(
         "--batch_size", type=int, default=32, help="Размер батча (на устройстве)"
     )
     parser.add_argument(
-        "--learning_rate", type=float, default=1e-5, help="Скорость обучения"
+        "--learning_rate", type=float, default=1e-4, help="Скорость обучения"
     )
     parser.add_argument(
         "--weight_decay", type=float, default=0.01, help="Коэффициент weight decay"

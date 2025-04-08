@@ -148,13 +148,15 @@ st.markdown(
 col1, col2 = st.columns(2)
 with col1:
     title_input = st.text_input(
-        "Название статьи", value="", placeholder="Введите название статьи"
+        "Название статьи",
+        value="",
+        placeholder="Например: A Novel Approach to Visual Recognition"
     )
 with col2:
     abstract_input = st.text_input(
         "Аннотация (abstract)",
         value="",
-        placeholder="Введите аннотацию (необязательно)",
+        placeholder="Например: В данной статье представлен новый метод обработки изображений...",
     )
 
 if st.button("Предсказать тематику"):
@@ -170,7 +172,7 @@ if st.button("Предсказать тематику"):
             model, tokenizer = load_model()
             probs = predict(input_text, model, tokenizer)
 
-        if hasattr(model.config, "id2label"):
+        if hasattr(model.config, "id2label") and model.config.id2label:
             id2label = model.config.id2label
             num_classes = len(probs)
             class_names = [

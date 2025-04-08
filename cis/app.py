@@ -71,24 +71,28 @@ def load_model(
       - файл с весами, сохранёнными через torch.save(model.state_dict(), "pytorch_model.pt")
     """
     model_dir = os.path.abspath(model_dir)
-    print(model_dir)
-    tokenizer = DistilBertTokenizerFast.from_pretrained(
-        model_dir, local_files_only=True
-    )
-    config = DistilBertConfig.from_pretrained(
-        model_dir, local_files_only=True
-    )
+    
+    tokenizer = DistilBertTokenizerFast.from_pretrained(model_dir, local_files_only=True)
+    config = DistilBertConfig.from_pretrained(model_dir, local_files_only=True)
+    
     config.num_labels = 10
-    model = DistilBertForSequenceClassification(config)
 
     state_dict_path = os.path.join(model_dir, "pytorch_model.pt")
-    if os.path.exists(state_dict_path):
-        device = "cuda" if torch.cuda.is_available() else "cpu"
-        state_dict = torch.load(state_dict_path, map_location=device)
-        model.load_state_dict(state_dict)
-    else:
+    if not os.path.exists(state_dict_path):
         st.error(f"Файл с весами не найден: {state_dict_path}")
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    state_dict = torch.load(state_dict_path, map_location=device)
+    
+    if 'distilbert.embeddings.word_embeddings.weight' in state_dict:
+        saved_vocab_size = state_dict['distilbert.embeddings.word_embeddings.weight'].shape[0]
+        config.vocab_size = saved_vocab_size
+    else:
+        config.vocab_size = tokenizer.vocab_size
 
+    model = DistilBertForSequenceClassification(config)
+    
+    model.load_state_dict(state_dict)
+    
     model.eval()
     if torch.cuda.is_available():
         model.to("cuda")

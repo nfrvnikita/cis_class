@@ -176,26 +176,26 @@ if st.button("Предсказать тематику"):
             model, tokenizer = load_model()
             probs = predict(input_text, model, tokenizer)
 
+        class_mapping = {
+            2: "Computer Science",
+            9: "Statistics",
+            5: "Mathematics",
+            8: "Quantitative Biology",
+            7: "Physics",
+            1: "Computational Linguistics",
+            6: "Other",
+            4: "Electrical Engineering",
+            3: "Condensed Matter",
+            0: "Astrophysics"
+        }
+
         if hasattr(model.config, "id2label") and model.config.id2label:
             id2label = {int(k): v for k, v in model.config.id2label.items()}
             num_classes = len(probs)
-            class_names = [
-                id2label.get(str(i), f"Class_{i}") for i in range(num_classes)
-            ]
+            class_names = [id2label.get(i, f"Class_{i}") for i in range(num_classes)]
         else:
-            class_names = [
-                "Computer Science",
-                "Statistics",
-                "Mathematics",
-                "Quantitative Biology",
-                "Physics",
-                "Astrophysics",
-                "Condensed Matter",
-                "Electrical Engineering",
-                "Nonlinear Sciences",
-                "Computational Linguistics",
-                "Other",
-            ]
+            num_classes = len(probs)
+            class_names = [class_mapping.get(i, f"Class_{i}") for i in range(num_classes)]
 
         top_classes = select_top95(probs, class_names)
 

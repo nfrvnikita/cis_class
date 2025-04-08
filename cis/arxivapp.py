@@ -71,14 +71,14 @@ def load_model(
       - файл с весами, сохранёнными через torch.save(model.state_dict(), "pytorch_model.pt")
     """
     tokenizer = DistilBertTokenizerFast.from_pretrained(
-        "distilbert-base-cased", local_files_only=True
+        model_dir, local_files_only=True
     )
     config = DistilBertConfig.from_pretrained(
-        "distilbert-base-cased", local_files_only=True
+        model_dir, local_files_only=True
     )
     config.num_labels = 10
     model = DistilBertForSequenceClassification.from_pretrained(
-        "distilbert-base-cased", config=config, local_files_only=True
+        model_dir, config=config, local_files_only=True
     )
 
     state_dict_path = os.path.join(model_dir, "pytorch_model.pt")

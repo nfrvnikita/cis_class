@@ -9,6 +9,8 @@ from transformers import (
 )
 from typing import Tuple, List
 
+torch.classes.__path__ = []
+
 st.set_page_config(page_title="Классификация статей arXiv", layout="centered")
 
 st.markdown(
@@ -60,7 +62,7 @@ st.sidebar.markdown("- *Аннотация (abstract)* (необязательн
 
 @st.cache_resource(show_spinner=False)
 def load_model(
-    model_dir: str = "../models/",
+    model_dir: str = "./models",
 ) -> Tuple[DistilBertForSequenceClassification, DistilBertTokenizerFast]:
     """
     Загружает токенизатор, конфигурацию модели и веса, сохранённые через torch.load.

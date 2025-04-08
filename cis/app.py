@@ -16,32 +16,36 @@ st.set_page_config(page_title="Классификация статей arXiv", l
 st.markdown(
     """
     <style>
-    /* Изменение стиля заголовков */
-    .main > .block-container h1 {
-        font-family: 'Helvetica Neue', sans-serif;
-        color: #2c3e50;
-    }
-    .main > .block-container h2 {
-        color: #34495e;
-    }
-    /* Изменение стиля кнопок */
-    div.stButton > button {
-        background-color: #2ecc71;
-        color: white;
-        font-size:18px;
-        border-radius:10px;
-        border: none;
-        padding: 10px 20px;
-    }
-    div.stButton > button:hover {
-        background-color: #27ae60;
-        color: white;
-    }
-    /* Настройка боковой панели */
-    .sidebar .sidebar-content {
-        font-family: 'Arial', sans-serif;
-        color: #2c3e50;
-    }
+        /* Общий фон */
+        .reportview-container {
+            background: linear-gradient(135deg, #f6f8fa, #e9eff5);
+        }
+        /* Заголовки и текст */
+        .main > .block-container h1, .main > .block-container h2 {
+            font-family: 'Helvetica Neue', sans-serif;
+        }
+        .main > .block-container {
+            padding: 2rem;
+        }
+        /* Кнопки */
+        div.stButton > button {
+            background-color: #2ecc71;
+            color: #ffffff;
+            border-radius: 10px;
+            border: none;
+            padding: 10px 20px;
+            font-size: 18px;
+            transition: background-color 0.3s ease;
+        }
+        div.stButton > button:hover {
+            background-color: #27ae60;
+        }
+        /* Поля ввода */
+        .stTextInput>div>div>input {
+            border: 2px solid #ced4da;
+            border-radius: 5px;
+            padding: 8px;
+        }
     </style>
     """,
     unsafe_allow_html=True,
@@ -147,13 +151,13 @@ st.markdown(
 # Основные поля ввода
 col1, col2 = st.columns(2)
 with col1:
-    title_input = st.text_input(
+    title_input = st.text_area(
         "Название статьи",
         value="",
         placeholder="Например: A Novel Approach to Visual Recognition"
     )
 with col2:
-    abstract_input = st.text_input(
+    abstract_input = st.text_area(
         "Аннотация (abstract)",
         value="",
         placeholder="Например: В данной статье представлен новый метод обработки изображений...",
@@ -173,7 +177,7 @@ if st.button("Предсказать тематику"):
             probs = predict(input_text, model, tokenizer)
 
         if hasattr(model.config, "id2label") and model.config.id2label:
-            id2label = model.config.id2label
+            id2label = {int(k): v for k, v in model.config.id2label.items()}
             num_classes = len(probs)
             class_names = [
                 id2label.get(str(i), f"Class_{i}") for i in range(num_classes)

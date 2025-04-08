@@ -1,6 +1,7 @@
 import os
 import streamlit as st
 import torch
+import pandas as pd
 import numpy as np
 from transformers import (
     DistilBertTokenizerFast,
@@ -55,9 +56,16 @@ st.sidebar.title("О приложении")
 st.sidebar.info(
     """
     Это приложение использует модель DistilBERT для классификации статей arXiv по тематике.
-    Введите название статьи и (опционально) аннотацию, и модель выведет топ-классы, суммарная вероятность которых ≥95%.
+    Введите название статьи и (опционально) аннотацию, а модель выдаст топ-классы, суммарная вероятность которых 
+    превышает заданный порог.
     """
 )
+
+# Позволяем пользователю настраивать порог суммарной вероятности для выбора топ-классов
+user_threshold = st.sidebar.slider(
+    "Порог суммарной вероятности для выбора топ-классов", min_value=0.5, max_value=1.0, value=0.95, step=0.01
+)
+
 st.sidebar.markdown("---")
 st.sidebar.markdown("**Входные данные**")
 st.sidebar.markdown("- *Название статьи* (обязательное)")
@@ -143,8 +151,7 @@ st.title("Классификация статей arXiv")
 st.markdown(
     """
     Введите название статьи и (опционально) её аннотацию в поля ниже.
-    
-    Модель выполнит предсказание вероятностей принадлежности к тематикам и выведет топ-классы, суммарная вероятность которых превышает **95%**.
+    Модель выполнит предсказание вероятностей принадлежности к тематикам и выведет топ-классы.
     """
 )
 
@@ -195,11 +202,31 @@ if st.button("Предсказать тематику"):
 
         top_classes = select_top95(probs, class_names)
 
-        st.subheader("Предсказанная тематика (топ-95% вероятности):")
-        for label, prob in top_classes:
-            st.markdown(f"- **{label}** — {prob * 100:.2f}%")
+        tab1, tab2, tab3 = st.tabs(["Результаты", "Подробная статистика", "Информация о модели"])
 
-        st.markdown("---")
-        with st.expander("Посмотреть полный список вероятностей"):
-            for name, p in zip(class_names, probs):
-                st.write(f"{name}: {p * 100:.2f}%")
+        with tab1:
+            st.subheader("Предсказанная тематика (топ-классы)")
+            for label, prob in top_classes:
+                st.markdown(f"- **{label}** — {prob * 100:.2f}%")
+
+            st.markdown("### Визуализация топ-классов")
+            df_top = pd.DataFrame(top_classes, columns=["Класс", "Вероятность"])
+            df_top = df_top.set_index("Класс")
+            st.bar_chart(df_top)
+
+        with tab2:
+            st.subheader("Полное распределение вероятностей по классам")
+            df_full = pd.DataFrame({"Класс": class_names, "Вероятность": probs})
+            df_full["Вероятность (%)"] = df_full["Вероятность"] * 100
+            st.dataframe(df_full.sort_values(by="Вероятность", ascending=False))
+            st.markdown("### График распределения вероятностей")
+            df_full_sorted = df_full.sort_values(by="Вероятность", ascending=True)
+            df_full_chart = df_full_sorted.set_index("Класс")["Вероятность (%)"]
+            st.bar_chart(df_full_chart)
+
+        with tab3:
+            st.subheader("Информация о модели")
+            st.write("**Архитектура модели:** DistilBERT для классификации")
+            st.write(f"**Число меток (labels):** {model.config.num_labels}")
+            st.write("**Конфигурация модели:**")
+            st.json(model.config.to_dict())

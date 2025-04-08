@@ -62,7 +62,7 @@ st.sidebar.markdown("- *Аннотация (abstract)* (необязательн
 
 @st.cache_resource(show_spinner=False)
 def load_model(
-    model_dir: str = "./models",
+    model_dir: str = "./models/distilbert-base-cased",
 ) -> Tuple[DistilBertForSequenceClassification, DistilBertTokenizerFast]:
     """
     Загружает токенизатор, конфигурацию модели и веса, сохранённые через torch.load.

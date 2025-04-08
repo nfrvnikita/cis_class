@@ -70,6 +70,7 @@ def load_model(
       - файлы модели и токенизатора в формате Hugging Face (config.json, tokenizer.*, и т.п.)
       - файл с весами, сохранёнными через torch.save(model.state_dict(), "pytorch_model.pt")
     """
+    model_dir = os.path.abspath(model_dir)
     tokenizer = DistilBertTokenizerFast.from_pretrained(
         model_dir, local_files_only=True
     )

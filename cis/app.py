@@ -3,12 +3,19 @@ import streamlit as st
 import torch
 import pandas as pd
 import numpy as np
+import re
+import nltk
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
 from transformers import (
     DistilBertTokenizerFast,
     DistilBertForSequenceClassification,
     DistilBertConfig,
 )
 from typing import Tuple, List
+
+nltk.download("stopwords")
+nltk.download("wordnet")
 
 torch.classes.__path__ = []
 
@@ -61,9 +68,12 @@ st.sidebar.info(
     """
 )
 
-# Позволяем пользователю настраивать порог суммарной вероятности для выбора топ-классов
 user_threshold = st.sidebar.slider(
-    "Порог суммарной вероятности для выбора топ-классов", min_value=0.5, max_value=1.0, value=0.95, step=0.01
+    "Порог суммарной вероятности для выбора топ-классов",
+    min_value=0.5,
+    max_value=1.0,
+    value=0.95,
+    step=0.01,
 )
 
 st.sidebar.markdown("---")
@@ -72,21 +82,44 @@ st.sidebar.markdown("- *Название статьи* (обязательное
 st.sidebar.markdown("- *Аннотация (abstract)* (необязательное)")
 
 
+def clean_text(text: str) -> str:
+    """
+    Осуществляет предварительную обработку текста:
+    - Приведение к нижнему регистру
+    - Удаление пунктуации и лишних пробелов
+    - Токенизация (split по пробелам)
+    - Удаление английских стоп-слов
+    - Лемматизация
+    Возвращает очищенный текст.
+    """
+    text = text.lower()
+    text = re.sub(r"[^\w\s]", "", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    tokens = text.split()
+    stop_words = set(stopwords.words("english"))
+    tokens = [word for word in tokens if word not in stop_words]
+    lemmatizer = WordNetLemmatizer()
+    tokens = [lemmatizer.lemmatize(word) for word in tokens]
+    return " ".join(tokens)
+
+
 @st.cache_resource(show_spinner=False)
 def load_model(
     model_dir: str = "./models/distilbert-base-cased",
 ) -> Tuple[DistilBertForSequenceClassification, DistilBertTokenizerFast]:
     """
-    Загружает токенизатор, конфигурацию модели и веса, сохранённые через torch.load.
-    В директории model_dir должны быть:
-      - файлы модели и токенизатора в формате Hugging Face (config.json, tokenizer.*, и т.п.)
-      - файл с весами, сохранёнными через torch.save(model.state_dict(), "pytorch_model.pt")
+    Загружает токенизатор, конфигурацию модели и веса,
+    сохранённые через torch.load.
+    В директории model_dir должны быть файлы модели и токенизатора в формате Hugging Face,
+    а также файл с весами (pytorch_model.pt).
     """
     model_dir = os.path.abspath(model_dir)
-    
-    tokenizer = DistilBertTokenizerFast.from_pretrained(model_dir, local_files_only=True)
+
+    tokenizer = DistilBertTokenizerFast.from_pretrained(
+        model_dir, local_files_only=True
+    )
     config = DistilBertConfig.from_pretrained(model_dir, local_files_only=True)
-    
+
     config.num_labels = 10
 
     state_dict_path = os.path.join(model_dir, "pytorch_model.pt")
@@ -94,17 +127,19 @@ def load_model(
         st.error(f"Файл с весами не найден: {state_dict_path}")
     device = "cuda" if torch.cuda.is_available() else "cpu"
     state_dict = torch.load(state_dict_path, map_location=device)
-    
-    if 'distilbert.embeddings.word_embeddings.weight' in state_dict:
-        saved_vocab_size = state_dict['distilbert.embeddings.word_embeddings.weight'].shape[0]
+
+    if "distilbert.embeddings.word_embeddings.weight" in state_dict:
+        saved_vocab_size = state_dict[
+            "distilbert.embeddings.word_embeddings.weight"
+        ].shape[0]
         config.vocab_size = saved_vocab_size
     else:
         config.vocab_size = tokenizer.vocab_size
 
     model = DistilBertForSequenceClassification(config)
-    
+
     model.load_state_dict(state_dict)
-    
+
     model.eval()
     if torch.cuda.is_available():
         model.to("cuda")
@@ -118,6 +153,7 @@ def predict(
 ) -> np.ndarray:
     """
     Выполняет предсказание для заданного текста и возвращает вероятностное распределение по классам.
+    Обратите внимание, что текст должен проходить ту же предварительную обработку, что и обучающие данные.
     """
     inputs = tokenizer(text, truncation=True, max_length=512, return_tensors="pt")
     if torch.cuda.is_available():
@@ -146,7 +182,6 @@ def select_top95(probs: np.ndarray, class_names: List[str]) -> List[Tuple[str, f
     return selected
 
 
-# Основной интерфейс
 st.title("Классификация статей arXiv")
 st.markdown(
     """
@@ -155,13 +190,12 @@ st.markdown(
     """
 )
 
-# Основные поля ввода
 col1, col2 = st.columns(2)
 with col1:
     title_input = st.text_area(
         "Название статьи",
         value="",
-        placeholder="Например: A Novel Approach to Visual Recognition"
+        placeholder="Например: A Novel Approach to Visual Recognition",
     )
 with col2:
     abstract_input = st.text_area(
@@ -179,6 +213,8 @@ if st.button("Предсказать тематику"):
         else:
             input_text = f"{title_input.strip()} [SEP] {abstract_input.strip()}"
 
+        input_text = clean_text(input_text)
+
         with st.spinner("Загрузка модели и выполнение предсказания..."):
             model, tokenizer = load_model()
             probs = predict(input_text, model, tokenizer)
@@ -193,16 +229,16 @@ if st.button("Предсказать тематику"):
             6: "Other",
             4: "Electrical Engineering",
             3: "Condensed Matter",
-            0: "Astrophysics"
+            0: "Astrophysics",
         }
-
 
         num_classes = len(probs)
         class_names = [class_mapping.get(i, f"Class_{i}") for i in range(num_classes)]
-
         top_classes = select_top95(probs, class_names)
 
-        tab1, tab2, tab3 = st.tabs(["Результаты", "Подробная статистика", "Информация о модели"])
+        tab1, tab2, tab3 = st.tabs(
+            ["Результаты", "Подробная статистика", "Информация о модели"]
+        )
 
         with tab1:
             st.subheader("Предсказанная тематика (топ-классы)")

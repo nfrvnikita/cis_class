@@ -9,6 +9,7 @@ dependencies = [
     "datasets>=3.5.0",
     "ipykernel>=6.29.5",
     "matplotlib>=3.10.1",
+    "nltk>=3.9.1",
     "numpy>=2.1.1",
     "opencv-python>=4.11.0.86",
     "optuna>=4.2.1",
